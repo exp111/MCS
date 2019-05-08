@@ -9,7 +9,7 @@ SetUp	=	$F800		; Suboutine System SetUp
 ; User Support:		
 LCD4x20A=	SetUp+3		; Subroutine LCD4x20A (Version Assembler)
 VoltAnz	=	SetUp+6		; Subroutine VoltAnz  (Ausgabe "#,##V")
-Warte1ms=	SetUp+9		; Subroutine Warte1ms (Verzögerungszeit tv=1ms)
+Wait=	SetUp+9		; Subroutine Warte1ms (Verzögerungszeit tv=1ms)
 
 ; **********************************************************************************
 
@@ -29,15 +29,16 @@ BIT0    = 0b00000001
 BIT3    = 0b00001000
 BIT7    = 0b10000000 ; SPIF auslesen
 
-ADU4:    .BLKB 2
-ADUASC:  .BLKB 2
-ADUTERM: .BLKB 1
+SUCCSTEP: .BLKB 1
+UE: .BLKB 1
 
  .ORG    $4000		; ASM Code ab 0x4000
  
 START:   LDS #STACK
 		 JSR SetUp ; Init stack & stuff
 		 MOVB #0b0, DDRB ; PB0 as Input
+		 MOVB #0b10000000, SUCCSTEP
+		 MOVB #0b00000000, UE
 	     LDX #0xFFFE ; Init LCD
          JSR LCD4x20A
          LDX #LCDEI ; Init First Line (ADU Wert)
@@ -50,21 +51,42 @@ SPIINI: BSET DDRA, #BIT3 ; SYNC as Output
         
 
 MLOOP: LDY  #0x0308 ; Position
-	   LDAA #0xFF ; Volt Value
+	   LDAA UE ; Volt Value
        JSR VoltAnz
-	   LDAA #0b11111111
-	   JSR DAOUT
-	   JSR Warte1ms
+	   
+	   LDAA UE ; Read current value into akka
+	   ADDA SUCCSTEP
+	   STAA UE
+	   JSR DAOUT ; Output akka
+	   JSR Wait
+	   
+	   LDAA SUCCSTEP
+	   CMPA #0
+	   BEQ MLOOP ; already there
+	   
+	   LDAA PORTB
+	   BRCLR PORTB, #BIT0, ELSEN ; cmp to PB0
+	   
+	   BRA NEXT
+	   
+ELSEN: LDAA UE
+	   SUBA SUCCSTEP; larger than -> remove bit
+	   STAA UE
+	   
+	   
+NEXT:  LDAB SUCCSTEP
+	   LSRB
+	   STAB SUCCSTEP
+	   
        BRA MLOOP
 
 	   
 DAOUT:  BCLR PORTA, #BIT3 ; SYNC
+		LDAB #0 ; Clear B
 		LSRD ; From
 		LSRD ; 0b11111111
 		LSRD ; to
 		LSRD ; 0b00001111
-        LDAA #0b00001111 ;xxDD7654
-		LDAB #0b11110000 ;3210xxxx
         STAA SPIDR ; Write A
 LOOP1:  BRCLR SPISR, #BIT7, LOOP1
         LDAA SPIDR ; Dummy Read
