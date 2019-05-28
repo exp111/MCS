@@ -17,6 +17,7 @@
 //=== Globale Variablen ===
 int ready = 0;
 int synchronized = 0;
+int currentAdd = 1;
 
 //=== Funktionsdeklarationen ===
 // Display:
@@ -51,7 +52,47 @@ void main(void)
     { 
 	    if (ready && (TFLG1 & BIT0))
 		{
-		   PORTA & BIT0;
+           if (seconds == 21 || seconds == 29) //reset add
+           {
+               currentAdd = 1;
+           }
+		   if (seconds < 29) //minutes
+           {
+               if (seconds != 28) //fuck the parity bit
+               {
+                   if (PORTA & BIT0)
+                   {
+                        minutes += currentAdd;
+                   }
+                   if (currentAdd == 8)
+                   {
+                       currentAdd = 10;
+                   }
+                   else
+                   {
+                       currentAdd *= 2;
+                   }
+               }
+           }
+           else //hours
+           {
+               if (seconds != 35) //fuck the parity bit
+               {
+                    if (PORTA & BIT0)
+                    {
+                        hours += currentAdd;
+                    }
+                    if (currentAdd == 8)
+                    {
+                        currentAdd = 10;
+                    }
+                    else
+                    {
+                        currentAdd *= 2;
+                    }
+               }
+           }
+           ready = 0;
 		}
     } //Abschluss while(1)
 
@@ -113,6 +154,9 @@ void IRQ_Routine(void)
 	if (synchronized && seconds > 20 && seconds < 36)
 	{
         ready = 1;
+        hours = 0;
+        minutes = 0;
+        seconds = 0;
 		if (TC0 & BIT0) //dummy read to clear flag
 		{
 		
