@@ -70,7 +70,7 @@ void main(void)
 		   {
 			   if (seconds != 28) //fuck the parity bit
 			   {
-				   if (!(PORTA & BIT0)
+				   if (!(PORTA & BIT0))
 				   {
 						minutes += currentAdd;
 				   }
@@ -88,7 +88,7 @@ void main(void)
 		   {
 			   if (seconds != 35) //fuck the parity bit
 			   {
-					if (!(PORTA & BIT0)
+					if (!(PORTA & BIT0))
 					{
 						hours += currentAdd;
 					}
