@@ -19,6 +19,10 @@ volatile int ready = 0;
 int synchronized = 0;
 int currentAdd = 1;
 
+int hours = 0;
+int minutes = 0;
+int seconds = 0;
+
 //=== Funktionsdeklarationen ===
 // Display:
 int LCD4x20C (int LineSel, int CsrPos, char* ChrPntr); //LCD-Display
@@ -149,9 +153,6 @@ void OutputTime(int hours, int minutes, int seconds)
 void IRQ_Routine(void)
 {
 //=== Variablendeklarationen ===
-	static int hours = 0;
-	static int minutes = 0;
-	static int seconds = 0;
 //=== IRQ-Routine =============================================
 	//Set IRQ low
 	PORTA &= ~BIT3;
