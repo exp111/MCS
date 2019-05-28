@@ -15,7 +15,7 @@
 #define BIT7 0b10000000
 
 //=== Globale Variablen ===
-int ready = 0;
+volatile int ready = 0;
 int synchronized = 0;
 int currentAdd = 1;
 
@@ -54,13 +54,19 @@ void main(void)
 		{
 		   if (seconds == 21 || seconds == 29) //reset add
 		   {
+			   if (seconds == 21)
+			   {
+					hours = 0;
+					minutes = 0;
+					seconds = 0;
+			   }
 			   currentAdd = 1;
 		   }
 		   if (seconds < 29) //minutes
 		   {
 			   if (seconds != 28) //fuck the parity bit
 			   {
-				   if (PORTA & BIT0)
+				   if (!(PORTA & BIT0)
 				   {
 						minutes += currentAdd;
 				   }
@@ -74,11 +80,11 @@ void main(void)
 				   }
 			   }
 		   }
-		   else //hours
+		   else if (seconds < 36)//hours
 		   {
 			   if (seconds != 35) //fuck the parity bit
 			   {
-					if (PORTA & BIT0)
+					if (!(PORTA & BIT0)
 					{
 						hours += currentAdd;
 					}
@@ -154,9 +160,6 @@ void IRQ_Routine(void)
 	if (synchronized && seconds > 20 && seconds < 36)
 	{
 		ready = 1;
-		hours = 0;
-		minutes = 0;
-		seconds = 0;
 		if (TC0 & BIT0) //dummy read to clear flag
 		{
 		
