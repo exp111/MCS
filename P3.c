@@ -32,10 +32,10 @@ void main(void)
 //=== Initialisierungen ===
 
 // LCD-Display 
-    LCD4x20C(0,0,0); // Display löschen
+	LCD4x20C(0,0,0); // Display löschen
 
 // PORTs , Timer  etc.	 
-    DDRA = 0b00001000;
+	DDRA = 0b00001000;
 	PORTA |= BIT3;
 	
 	//Timer Interrupt Enable | PR2
@@ -44,57 +44,57 @@ void main(void)
 	TSCR1 = ~BIT7 | BIT4;
 	TIOS = BIT0;
 
-    asm ("CLI"); // Clear Interrupt-Mask (falls IRQ Routine vorhanden)
+	asm ("CLI"); // Clear Interrupt-Mask (falls IRQ Routine vorhanden)
 
 //=== Hauptroutine =============================================
-    LCD4x20C(2,2,"  :  :  ");
-    while(1)
-    { 
-	    if (ready && (TFLG1 & BIT0))
+	LCD4x20C(2,2,"  :  :  ");
+	while(1)
+	{ 
+		if (ready && (TFLG1 & BIT0)) //Timer overflowed
 		{
-           if (seconds == 21 || seconds == 29) //reset add
-           {
-               currentAdd = 1;
-           }
+		   if (seconds == 21 || seconds == 29) //reset add
+		   {
+			   currentAdd = 1;
+		   }
 		   if (seconds < 29) //minutes
-           {
-               if (seconds != 28) //fuck the parity bit
-               {
-                   if (PORTA & BIT0)
-                   {
-                        minutes += currentAdd;
-                   }
-                   if (currentAdd == 8)
-                   {
-                       currentAdd = 10;
-                   }
-                   else
-                   {
-                       currentAdd *= 2;
-                   }
-               }
-           }
-           else //hours
-           {
-               if (seconds != 35) //fuck the parity bit
-               {
-                    if (PORTA & BIT0)
-                    {
-                        hours += currentAdd;
-                    }
-                    if (currentAdd == 8)
-                    {
-                        currentAdd = 10;
-                    }
-                    else
-                    {
-                        currentAdd *= 2;
-                    }
-               }
-           }
-           ready = 0;
+		   {
+			   if (seconds != 28) //fuck the parity bit
+			   {
+				   if (PORTA & BIT0)
+				   {
+						minutes += currentAdd;
+				   }
+				   if (currentAdd == 8)
+				   {
+					   currentAdd = 10;
+				   }
+				   else
+				   {
+					   currentAdd *= 2;
+				   }
+			   }
+		   }
+		   else //hours
+		   {
+			   if (seconds != 35) //fuck the parity bit
+			   {
+					if (PORTA & BIT0)
+					{
+						hours += currentAdd;
+					}
+					if (currentAdd == 8)
+					{
+						currentAdd = 10;
+					}
+					else
+					{
+						currentAdd *= 2;
+					}
+			   }
+		   }
+		   ready = 0;
 		}
-    } //Abschluss while(1)
+	} //Abschluss while(1)
 
 
 // Wenn MAIN kein CLOSED LOOP erfolgt ein kontrollierter Programm-Abbruch
@@ -108,13 +108,13 @@ void IncreaseTime()
 {
    if (++seconds >= 60)
 	   {
-	      seconds = 0;
+		  seconds = 0;
 		  if (++minutes >= 60)
 		  {
-		     minutes = 0;
+			 minutes = 0;
 			 if (++hours >= 24)
 			 {
-			    hours = 0;
+				hours = 0;
 			 }
 		  }
 	   }
@@ -122,8 +122,8 @@ void IncreaseTime()
 
 void OutputTime(int hours, int minutes, int seconds)
 {
-    char text[3];
-    text[2] = '\0';
+	char text[3];
+	text[2] = '\0';
 	
 	text[0] = '0' + (hours / 10);
 	text[1] = '0' + (hours % 10);
@@ -133,7 +133,7 @@ void OutputTime(int hours, int minutes, int seconds)
 	text[1] = '0' + (minutes % 10);
 	LCD4x20C(2,5,text);
 	
-    text[0] = '0' + (seconds / 10);
+	text[0] = '0' + (seconds / 10);
 	text[1] = '0' + (seconds % 10);
 	LCD4x20C(2,8,text);
 }
@@ -143,7 +143,7 @@ void OutputTime(int hours, int minutes, int seconds)
 void IRQ_Routine(void)
 {
 //=== Variablendeklarationen ===
-    static int hours = 0;
+	static int hours = 0;
 	static int minutes = 0;
 	static int seconds = 0;
 //=== IRQ-Routine =============================================
@@ -153,10 +153,10 @@ void IRQ_Routine(void)
 	// Only read if synchronized and reads minute or hour
 	if (synchronized && seconds > 20 && seconds < 36)
 	{
-        ready = 1;
-        hours = 0;
-        minutes = 0;
-        seconds = 0;
+		ready = 1;
+		hours = 0;
+		minutes = 0;
+		seconds = 0;
 		if (TC0 & BIT0) //dummy read to clear flag
 		{
 		
