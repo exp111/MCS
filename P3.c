@@ -17,11 +17,14 @@
 //=== Globale Variablen ===
 volatile int ready = 0;
 int synchronized = 0;
-int currentAdd = 1;
 
 int hours = 0;
 int minutes = 0;
 int seconds = 0;
+volatile int nextMin = 0;
+volatile int nextHour = 0;
+int setOnNextSec = 0;
+int adder[7] = {1,2,4,8,10,20,40};
 
 //=== Funktionsdeklarationen ===
 // Display:
@@ -42,10 +45,10 @@ void main(void)
 	DDRA = 0b00001000;
 	PORTA |= BIT3;
 	
-	//Timer Interrupt Enable | PR2
-	TSCR2 = BIT2;
+	//PR2 | PR1 | PR0
+	TSCR2 = BIT2 | BIT1 | BIT0;
 	//Timer Enable | Quick Easy Mode
-	TSCR1 = ~BIT7 | BIT4;
+	TSCR1 = BIT7 | BIT4;
 	TIOS = BIT0;
 
 	asm ("CLI"); // Clear Interrupt-Mask (falls IRQ Routine vorhanden)
@@ -54,54 +57,30 @@ void main(void)
 	LCD4x20C(2,2,"  :  :  ");
 	while(1)
 	{ 
-		if (ready && (TFLG1 & BIT0)) //Timer overflowed
+		if (ready) //Timer overflowed
 		{
-		   if (seconds == 21 || seconds == 29) //reset add
-		   {
-			   if (seconds == 21)
-			   {
-					hours = 0;
-					minutes = 0;
-			   }
-			   currentAdd = 1;
-		   }
-		   if (seconds < 29) //minutes
-		   {
-			   if (seconds != 28) //fuck the parity bit
-			   {
-				   if (!(PORTA & BIT0))
-				   {
-						minutes += currentAdd;
-				   }
-				   if (currentAdd == 8)
-				   {
-					   currentAdd = 10;
-				   }
-				   else
-				   {
-					   currentAdd *= 2;
-				   }
-			   }
-		   }
-		   else if (seconds < 36)//hours
-		   {
-			   if (seconds != 35) //fuck the parity bit
-			   {
-					if (!(PORTA & BIT0))
-					{
-						hours += currentAdd;
-					}
-					if (currentAdd == 8)
-					{
-						currentAdd = 10;
-					}
-					else
-					{
-						currentAdd *= 2;
-					}
-			   }
-		   }
-		   ready = 0;
+		   	  TC0 = TCNT + 8750;
+		      while (!(TFLG1 & BIT0))
+		      {
+		      }
+		   	  if (!(PORTA & BIT0))
+		   	  {
+		 	   	 if (seconds < 29) //minutes
+		   	   	 {
+			   	    if (seconds != 28) //fuck the parity bit
+			   	    {
+						   nextMin += adder[seconds - 21];
+			   		}
+		   	   	 }
+		   	     else if (seconds < 36)//hours
+		   	     {
+			   		if (seconds != 35) //fuck the parity bit
+			   	    {
+					   	   nextHour += adder[seconds - 29];
+			   		}
+		   	     }
+		      }
+		      ready = 0;
 		}
 	} //Abschluss while(1)
 
@@ -115,6 +94,14 @@ void main(void)
 
 void IncreaseTime()
 {
+   if (setOnNextSec)
+   {
+      seconds = 0;
+	  minutes = nextMin;
+	  hours = nextHour;
+	  setOnNextSec = 0;
+	  return;
+   }
    if (++seconds >= 60)
 	   {
 		  seconds = 0;
@@ -156,18 +143,12 @@ void IRQ_Routine(void)
 	//Set IRQ low
 	PORTA &= ~BIT3;
 	
-	// Only read if synchronized and reads minute or hour
-	if (synchronized && seconds > 20 && seconds < 36)
-	{
-		ready = 1;
-		if (TC0 & BIT0) //dummy read to clear flag
-		{
-		
-		}
-	}
-	
 	if (!(PORTA & BIT1)) //Bitankündigung
 	{
+	   if (synchronized)
+	   {
+	   	  setOnNextSec = 1;
+	   }
 	   seconds = 59;
 	   synchronized = 1;
 	}
@@ -177,6 +158,21 @@ void IRQ_Routine(void)
 	}
 	
 	OutputTime(hours, minutes, seconds);
+	
+	// Only read if synchronized and reads minute or hour
+	if (synchronized && seconds > 20 && seconds < 36)
+	{
+	    if (seconds == 21) //reset aua
+		{
+		   nextHour = 0;
+		   nextMin = 0;
+		}
+		ready = 1;
+		if (TC0 & BIT0) //dummy read to clear flag
+		{
+		
+		}
+	}
 	
 	//Set IRQ high
 	PORTA |= BIT3;
