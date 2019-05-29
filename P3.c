@@ -62,7 +62,6 @@ void main(void)
 			   {
 					hours = 0;
 					minutes = 0;
-					seconds = 0;
 			   }
 			   currentAdd = 1;
 		   }
