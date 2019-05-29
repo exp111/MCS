@@ -30,7 +30,6 @@ int adder[7] = {1,2,4,8,10,20,40};
 // Display:
 int LCD4x20C (int LineSel, int CsrPos, char* ChrPntr); //LCD-Display
 
-
 //=== main ===========================================================================
 
 void main(void) 
@@ -57,6 +56,16 @@ void main(void)
 	LCD4x20C(2,2,"  :  :  ");
 	while(1)
 	{ 
+	    if (PORTA & BIT2) //Error
+		{
+		    LCD4x20C(3,2,"Kein Empfang");
+		    ready =0;
+			synchronized = 0;
+		}
+		else
+		{
+		    LCD4x20C(3,0,"");
+		}
 		if (ready) //Timer overflowed
 		{
 		   	  TC0 = TCNT + 8750;
@@ -143,7 +152,7 @@ void IRQ_Routine(void)
 	//Set IRQ low
 	PORTA &= ~BIT3;
 	
-	if (!(PORTA & BIT1)) //Bitankündigung
+	if (!(PORTA & BIT1)) //Minutenankündigung
 	{
 	   if (synchronized)
 	   {
